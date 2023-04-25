@@ -1242,7 +1242,7 @@ function game_draw()
 				borderprint("ys:"..string.format("%2.3f", objects["player"][i].speedy), x, 40*scale+y)
 				borderprint(" x:"..string.format("%2.3f", objects["player"][i].x), x, 48*scale+y)
 				borderprint(" y:"..string.format("%2.3f", objects["player"][i].y), x, 56*scale+y)
-				if portaldelay[i] == 0 then
+				if portaldelay[i] < epsilon then
 					borderprint("pg:loaded", x, 64*scale+y)
 				else
 					borderprint("pg:"..string.format("%2.3f", portaldelay[i]), x, 64*scale+y)
