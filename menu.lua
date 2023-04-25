@@ -2,6 +2,8 @@ function menu_load()
 	love.audio.stop()
 	editormode = false
 	gamestate = "menu"
+	speedleveltime = 0
+	levelstarted = false
 	selection = 1
 	coinanimation = 1
 	love.graphics.setBackgroundColor(92, 148, 252)
@@ -225,19 +227,21 @@ function menu_draw()
 	end
 
 	---UI
+	borderprint(playername, uispace*.5 - 24*scale, 8*scale)
+	borderprint("000000", uispace*0.5-24*scale, 16*scale)
 
-	properprint("mario", uispace*.5 - 24*scale, 8*scale)
-	properprint("000000", uispace*0.5-24*scale, 16*scale)
-
-	properprint("*", uispace*1.5-8*scale, 16*scale)
+	borderprint("*", uispace*1.5-8*scale, 16*scale)
 
 	love.graphics.draw(coinanimationimage, coinanimationquads[1][coinframe], uispace*1.5-16*scale, 16*scale, 0, scale, scale)
-	properprint("00", uispace*1.5-0*scale, 16*scale)
+	borderprint("00", uispace*1.5-0*scale, 16*scale)
 
-	properprint("world", uispace*2.5 - 20*scale, 8*scale)
-	properprint("1-1", uispace*2.5 - 12*scale, 16*scale)
+	borderprint("world", uispace*2.5 - 20*scale, 8*scale)
+	borderprint("1-1", uispace*2.5 - 12*scale, 16*scale)
 
-	properprint("time", uispace*3.5 - 16*scale, 8*scale)
+	borderprint("time", uispace*3.5 - 16*scale, 8*scale)
+	if speedtimerenabled then
+		borderprint(string.format("%02d",math.floor(speedtimer/60))..":"..string.format("%02d",math.floor(speedtimer)%60).."."..string.format("%02d",math.floor(speedtimer*100)%100), uispace*3.5-48*scale, 16*scale)
+	end
 
 	for j = 1, players do
 
@@ -291,51 +295,27 @@ function menu_draw()
 			love.graphics.draw(menuselection, 98*scale, (137+(selection-1)*16)*scale, 0, scale, scale)
 		end
 
-		local start = 9
+		love.graphics.setColor(1, 1, 1)
 		if custombackground then
-			start = 1
-		end
-
-		for i = start, 9 do
-			local tx, ty = -scale, scale
-			love.graphics.setColor(0, 0, 0)
-			if i == 2 then
-				tx, ty = scale, scale
-			elseif i == 3 then
-				tx, ty = -scale, -scale
-			elseif i == 4 then
-				tx, ty = scale, -scale
-			elseif i == 5 then
-				tx, ty = 0, -scale
-			elseif i == 6 then
-				tx, ty = 0, scale
-			elseif i == 7 then
-				tx, ty = scale, 0
-			elseif i == 8 then
-				tx, ty = -scale, 0
-			elseif i == 9 then
-				tx, ty = 0, 0
-				love.graphics.setColor(1, 1, 1)
+			if continueavailable then
+				borderprint("continue game", 87*scale, 122*scale)
 			end
-
-			love.graphics.translate(tx, ty)
-
+			borderprint("player game", 103*scale, 138*scale)
+			borderprint("level editor", 95*scale, 154*scale)
+			borderprint("select mappack", 87*scale, 170*scale)
+			borderprint("options", 111*scale, 186*scale)
+			borderprint(players, 87*scale, 138*scale)
+		else
 			if continueavailable then
 				properprint("continue game", 87*scale, 122*scale)
 			end
-
 			properprint("player game", 103*scale, 138*scale)
-
 			properprint("level editor", 95*scale, 154*scale)
-
 			properprint("select mappack", 87*scale, 170*scale)
-
 			properprint("options", 111*scale, 186*scale)
-
 			properprint(players, 87*scale, 138*scale)
-
-			love.graphics.translate(-tx, -ty)
 		end
+
 
 		if players > 1 then
 			love.graphics.draw(playerselectimg, 82*scale, 138*scale, 0, scale, scale)

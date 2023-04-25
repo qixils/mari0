@@ -1024,10 +1024,11 @@ function mario:updateangle()
 		self.pointingangle = math.atan2(self.x+6/16-xscroll-(love.mouse.getX()/16/scale), (self.y+6/16-.5)-(love.mouse.getY()/16/scale))
 	elseif #controls[self.playernumber]["aimx"] > 0 then
 		local x, y
-
+		
+		local joysticks = love.joystick.getJoysticks()
 		local s = controls[self.playernumber]["aimx"]
 		if s[1] == "joy" then
-			x = -love.joystick.getAxis(s[2], s[4])
+			x = -joysticks[s[2]]:getAxis(s[4])
 			if s[5] == "neg" then
 				x = -x
 			end
@@ -1035,7 +1036,7 @@ function mario:updateangle()
 
 		s = controls[self.playernumber]["aimy"]
 		if s[1] == "joy" then
-			y = -love.joystick.getAxis(s[2], s[4])
+			y = -joysticks[s[2]]:getAxis(s[4])
 			if s[5] == "neg" then
 				y = -y
 			end
@@ -2911,6 +2912,19 @@ function mario:pipe(x, y, dir, i)
 	self:setquad()
 end
 
+function stopspeedtimer()
+	local levelcheck = mariolevel
+	local worldcheck = marioworld
+	levelcheck = levelcheck+1
+	if levelcheck > 4 then
+		levelcheck = 1
+		worldcheck = worldcheck + 1
+	end
+	if not love.filesystem.getInfo("mappacks/" .. mappack .. "/" .. worldcheck .. "-" .. levelcheck .. ".txt") then
+		speedtimerend = true
+	end
+end
+
 function mario:flag()
 	if levelfinished then
 		return
@@ -2931,6 +2945,7 @@ function mario:flag()
 	self.active = false
 	self:setquad()
 	levelfinished = true
+	stopspeedtimer()
 	levelfinishtype = "flag"
 	subtractscore = false
 	firework = false
@@ -2992,6 +3007,7 @@ function mario:axe()
 	self.gravity = 0
 	self.active = false
 	levelfinished = true
+	stopspeedtimer()
 	levelfinishtype = "castle"
 	levelfinishedmisc = 0
 	levelfinishedmisc2 = 1

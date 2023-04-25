@@ -32,6 +32,8 @@ function levelscreen_load(reason, i)
 		if reason == "next" then --next level
 			respawnsublevel = 0
 			checkpointx = nil
+			speedleveltime = 0
+			levelstarted = false
 
 			--check if next level doesn't exist
 			if not love.filesystem.getInfo("mappacks/" .. mappack .. "/" .. marioworld .. "-" .. mariolevel .. ".txt") then
@@ -103,6 +105,17 @@ function levelscreen_update(dt)
 	end
 end
 
+function sublevelscreen_draw()
+	if speedtimerend then
+		love.graphics.setColor(0.2, 1, 0.2, 1)
+	end
+	properprint("time", uispace*3.5 - 16*scale, 8*scale)
+	properprint(string.format("%02d",math.floor(speedtimer/60))..":"..string.format("%02d",math.floor(speedtimer)%60).."."..string.format("%02d",math.floor(speedtimer*100)%100), uispace*3.5-48*scale, 16*scale)
+	properprint("level time", uispace*3.5 - 64*scale, 24*scale)
+	properprint(string.format("%02d",math.floor(speedleveltime/60))..":"..string.format("%02d",math.floor(speedleveltime)%60).."."..string.format("%02d",math.floor(speedleveltime*100)%100), uispace*3.5-48*scale, 32*scale)
+	love.graphics.setColor(1,1,1,1)
+end
+
 function levelscreen_draw()
 	if levelscreentimer < blacktime - blacktimesub and levelscreentimer > blacktimesub then
 		love.graphics.setColor(1, 1, 1, 1)
@@ -143,6 +156,7 @@ function levelscreen_draw()
 				else
 					properprint("*  " .. mariolives[i], (width/2*16)*scale-8*scale, y+7*scale)
 				end
+				
 
 				if mappack == "smb" and marioworld == 1 and mariolevel == 1 then
 					local s = "remember that you can run with "
@@ -188,9 +202,13 @@ function levelscreen_draw()
 			love.graphics.translate(0, yoffset*scale)
 		end
 
-		properprint("mario", uispace*.5 - 24*scale, 8*scale)
+		properprint(playername, uispace*.5 - 24*scale, 8*scale)
+		
 		properprint(addzeros(marioscore, 6), uispace*0.5-24*scale, 16*scale)
 
+		if speedtimerenabled ~= true then
+			properprint("time", uispace*3.5 - 16*scale, 8*scale)
+		end
 		properprint("*", uispace*1.5-8*scale, 16*scale)
 
 		love.graphics.draw(coinanimationimage, coinanimationquads[2][coinframe], uispace*1.5-16*scale, 16*scale, 0, scale, scale)
@@ -199,6 +217,23 @@ function levelscreen_draw()
 		properprint("world", uispace*2.5 - 20*scale, 8*scale)
 		properprint(marioworld .. "-" .. mariolevel, uispace*2.5 - 12*scale, 16*scale)
 
+	end
+
+	if speedinfoenabled then
+		if gamestate == "gameover" then
+			properprint(string.format("%2.2f",blacktime-levelscreentimer), (width/2*16)*scale-16*scale, ((97+20-8)*scale)+23*scale)
+		else
+			properprint(string.format("%2.2f",blacktime-levelscreentimer), (width/2*16)*scale-16*scale, ((97 + (players-1)*20 - (players-1)*8)*scale)+23*scale)
+		end
+	end
+	if speedtimerenabled then
+		if speedtimerend then
+			love.graphics.setColor(0.2, 1, 0.2, 1)
+		end
 		properprint("time", uispace*3.5 - 16*scale, 8*scale)
+		properprint(string.format("%02d",math.floor(speedtimer/60))..":"..string.format("%02d",math.floor(speedtimer)%60).."."..string.format("%02d",math.floor(speedtimer*100)%100), uispace*3.5-48*scale, 16*scale)
+		properprint("level time", uispace*3.5 - 64*scale, 24*scale)
+		properprint(string.format("%02d",math.floor(speedleveltime/60))..":"..string.format("%02d",math.floor(speedleveltime)%60).."."..string.format("%02d",math.floor(speedleveltime*100)%100), uispace*3.5-48*scale, 32*scale)
+		love.graphics.setColor(1,1,1,1)
 	end
 end

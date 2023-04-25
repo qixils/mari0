@@ -33,8 +33,12 @@ function love.load()
 		players = 1
 		defaultconfig()
 	end
-
 	saveconfig()
+	speedtimer = speedtimeroffset
+	speedtimerend = false
+	tasminimapscroll = 0
+	speedleveltime = 0
+
 	width = 25
 	fullscreen = false
 	changescale(scale, fullscreen)
@@ -55,10 +59,15 @@ function love.load()
 
 
 	fontimage = love.graphics.newImage("graphics/SMB/font.png")
-	fontglyphs = "0123456789abcdefghijklmnopqrstuvwxyz.:/,'C-_>* !{}?"
+	fontimageback = love.graphics.newImage("graphics/SMB/fontback.png")
+	fontglyphs = "0123456789abcdefghijklmnopqrstuvwxyz.:/,\"C-_A* !{}?'()+=><#%"
 	fontquads = {}
 	for i = 1, string.len(fontglyphs) do
-		fontquads[string.sub(fontglyphs, i, i)] = love.graphics.newQuad((i-1)*8, 0, 8, 8, 512, 8)
+		fontquads[string.sub(fontglyphs, i, i)] = love.graphics.newQuad((i-1)*8, 0, 7, 8, fontimage:getWidth(), fontimage:getHeight())
+	end
+	fontquadsback = {}
+	for i = 1, string.len(fontglyphs) do
+		fontquadsback[string.sub(fontglyphs, i, i)] = love.graphics.newQuad((i-1)*10, 0, 10, 10, fontimageback:getWidth(), fontimageback:getHeight())
 	end
 
 	math.randomseed(os.time());math.random();math.random()
@@ -490,11 +499,13 @@ function love.load()
 	dropdownarrowimg = love.graphics.newImage("graphics/GUI/dropdownarrow.png")
 
 	--players
+	local playerpack = "tasbot"
+	if charmario then playerpack = "mario" end
 	marioanimations = {}
-	marioanimations[0] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/marioanimations0.png")
-	marioanimations[1] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/marioanimations1.png")
-	marioanimations[2] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/marioanimations2.png")
-	marioanimations[3] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/marioanimations3.png")
+	marioanimations[0] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/marioanimations0.png")
+	marioanimations[1] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/marioanimations1.png")
+	marioanimations[2] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/marioanimations2.png")
+	marioanimations[3] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/marioanimations3.png")
 
 	minecraftanimations = {}
 	minecraftanimations[0] = love.graphics.newImage("graphics/Minecraft/marioanimations0.png")
@@ -536,10 +547,10 @@ function love.load()
 
 
 	bigmarioanimations = {}
-	bigmarioanimations[0] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/bigmarioanimations0.png")
-	bigmarioanimations[1] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/bigmarioanimations1.png")
-	bigmarioanimations[2] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/bigmarioanimations2.png")
-	bigmarioanimations[3] = love.graphics.newImage("graphics/" .. graphicspack .. "/player/bigmarioanimations3.png")
+	bigmarioanimations[0] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/bigmarioanimations0.png")
+	bigmarioanimations[1] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/bigmarioanimations1.png")
+	bigmarioanimations[2] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/bigmarioanimations2.png")
+	bigmarioanimations[3] = love.graphics.newImage("graphics/" .. graphicspack .. "/player_" .. playerpack .. "/bigmarioanimations3.png")
 
 	bigminecraftanimations = {}
 	bigminecraftanimations[0] = love.graphics.newImage("graphics/Minecraft/bigmarioanimations0.png")
@@ -654,8 +665,8 @@ function love.load()
 	skinpuppet = {}
 	secondskinpuppet = {}
 	for i = 0, 3 do
-		skinpuppet[i] = love.graphics.newImage("graphics/" .. graphicspack .. "/options/skin" .. i .. ".png")
-		secondskinpuppet[i] = love.graphics.newImage("graphics/" .. graphicspack .. "/options/secondskin" .. i .. ".png")
+		skinpuppet[i] = love.graphics.newImage("graphics/" .. graphicspack .. "/options_".. playerpack .."/skin" .. i .. ".png")
+		secondskinpuppet[i] = love.graphics.newImage("graphics/" .. graphicspack .. "/options_".. playerpack .."/secondskin" .. i .. ".png")
 	end
 
 	--Ripping off
@@ -745,6 +756,12 @@ function love.load()
 end
 
 function love.update(dt)
+	if not speedtimerend then
+		speedtimer = speedtimer+dt
+	end
+	if not levelfinished and levelstarted and not speedtimerend then
+		speedleveltime = speedleveltime+dt
+	end
 	if music then
 		music:update()
 	end
@@ -812,6 +829,8 @@ function love.draw()
 		menu_draw()
 	elseif gamestate == "levelscreen" or gamestate == "gameover" or gamestate == "mappackfinished" then
 		levelscreen_draw()
+	elseif gamestate == "sublevelscreen" then
+		sublevelscreen_draw()
 	elseif gamestate == "game" then
 		game_draw()
 	elseif gamestate == "intro" then
@@ -839,7 +858,7 @@ function saveconfig()
 			s = s .. j .. "-" .. c
 			count = count + 1
 			if count == 12 then
-				s = s .. ";"
+				s = s .. ";\r\n"
 			else
 				s = s .. ","
 			end
@@ -847,12 +866,33 @@ function saveconfig()
 	end
 
 	for i = 1, #mariocolors do
-		s = s .. "playercolors:" .. i .. ":"
+		if charmario ~= true then
+			s = s .. "playercolors:" .. i .. ":"
+		else
+			s = s .. "marioplayercolors:" .. i .. ":"
+		end
 		for j = 1, 3 do
 			for k = 1, 3 do
 				s = s .. mariocolors[i][j][k]
 				if j == 3 and k == 3 then
-					s = s .. ";"
+					s = s .. ";\r\n"
+				else
+					s = s .. ","
+				end
+			end
+		end
+	end
+	for i = 1, #mariomariocolors do
+		if charmario ~= true then
+			s = s .. "marioplayercolors:" .. i .. ":"
+		else
+			s = s .. "playercolors:" .. i .. ":"
+		end
+		for j = 1, 3 do
+			for k = 1, 3 do
+				s = s .. mariomariocolors[i][j][k]
+				if j == 3 and k == 3 then
+					s = s .. ";\r\n"
 				else
 					s = s .. ","
 				end
@@ -862,44 +902,70 @@ function saveconfig()
 
 	for i = 1, #portalhues do
 		s = s .. "portalhues:" .. i .. ":"
-		s = s .. round(portalhues[i][1], 4) .. "," .. round(portalhues[i][2], 4) .. ";"
+		s = s .. round(portalhues[i][1], 4) .. "," .. round(portalhues[i][2], 4) .. ";\r\n"
 	end
 
 	for i = 1, #mariohats do
-		s = s .. "mariohats:" .. i
+		if charmario ~= true then
+			s = s .. "playerhats:" .. i
+		else
+			s = s .. "mariohats:" .. i
+		end
 		if #mariohats[i] > 0 then
 			s = s .. ":"
 		end
 		for j = 1, #mariohats[i] do
 			s = s .. mariohats[i][j]
 			if j == #mariohats[i] then
-				s = s .. ";"
+				s = s .. ";\r\n"
 			else
 				s = s .. ","
 			end
 		end
 
 		if #mariohats[i] == 0 then
-			s = s .. ";"
+			s = s .. ";\r\n"
+		end
+	end
+	for i = 1, #mariomariohats do
+		if charmario ~= true then
+			s = s .. "mariohats:" .. i
+		else
+			s = s .. "playerhats:" .. i
+		end
+		if #mariomariohats[i] > 0 then
+			s = s .. ":"
+		end
+		for j = 1, #mariomariohats[i] do
+			s = s .. mariomariohats[i][j]
+			if j == #mariomariohats[i] then
+				s = s .. ";\r\n"
+			else
+				s = s .. ","
+			end
+		end
+
+		if #mariomariohats[i] == 0 then
+			s = s .. ";\r\n"
 		end
 	end
 
-	s = s .. "scale:" .. scale .. ";"
+	s = s .. "scale:" .. scale .. ";\r\n"
 
-	s = s .. "shader1:" .. shaderlist[currentshaderi1] .. ";"
-	s = s .. "shader2:" .. shaderlist[currentshaderi2] .. ";"
+	s = s .. "shader1:" .. shaderlist[currentshaderi1] .. ";\r\n"
+	s = s .. "shader2:" .. shaderlist[currentshaderi2] .. ";\r\n"
 
-	s = s .. "volume:" .. volume .. ";"
-	s = s .. "mouseowner:" .. mouseowner .. ";"
+	s = s .. "volume:" .. volume .. ";\r\n"
+	s = s .. "mouseowner:" .. mouseowner .. ";\r\n"
 
-	s = s .. "mappack:" .. mappack .. ";"
+	s = s .. "mappack:" .. mappack .. ";\r\n"
 
 	if vsync then
-		s = s .. "vsync;"
+		s = s .. "vsync;\r\n"
 	end
 
 	if gamefinished then
-		s = s .. "gamefinished;"
+		s = s .. "gamefinished;\r\n"
 	end
 
 	--reached worlds
@@ -913,26 +979,63 @@ function saveconfig()
 			end
 
 			if j == 8 then
-				s = s .. ";"
+				s = s .. ";\r\n"
 			else
 				s = s .. ","
 			end
 		end
 	end
 
-	love.filesystem.write("options.txt", s)
+	if tasminimapenabled then
+		s = s .. "minimap:true:" .. tasminimapwidth .. ";\r\n"
+	else
+		s = s .. "minimap:false;\r\n"
+	end
+
+	s = s .. "timeroffset:" .. speedtimeroffset .. ";\r\n"
+
+	if speedinfoenabled then
+		s = s .. "speedinfo:true;\r\n"
+	else
+		s = s .. "speedinfo:false;\r\n"
+	end
+
+	s = s .. "infokey:" .. infokey ..";\r\n"
+	s = s .. "endtimerkey:" .. endtimerkey ..";\r\n"
+
+	if textoutline then
+		s = s .. "textoutline:true;\r\n"
+	else
+		s = s .. "textoutline:false;\r\n"
+	end
+
+	if speedtimerenabled then
+		s = s .. "timer:true;\r\n"
+	else
+		s = s .. "timer:false;\r\n"
+	end
+
+	if charmario then
+		s = s .. "dothemario:true;\r\n"
+	else
+		s = s .. "dothemario:false;\r\n"
+	end
+
+	s = s .. "playername:" .. playername .. ";\r\n"
+
+	love.filesystem.write("tasoptions.txt", s)
 end
 
 function loadconfig()
 	players = 1
 	defaultconfig()
 
-	if not love.filesystem.getInfo("options.txt") then
+	if not love.filesystem.getInfo("tasoptions.txt") then
 		return
 	end
 
-	local s = love.filesystem.read("options.txt")
-	s1 = s:split(";")
+	local s = love.filesystem.read("tasoptions.txt")
+	s1 = s:split(";\r\n")
 	for i = 1, #s1-1 do
 		s2 = s1[i]:split(":")
 
@@ -962,6 +1065,13 @@ function loadconfig()
 			s3 = s2[3]:split(",")
 			mariocolors[tonumber(s2[2])] = {{tonumber(s3[1]), tonumber(s3[2]), tonumber(s3[3])}, {tonumber(s3[4]), tonumber(s3[5]), tonumber(s3[6])}, {tonumber(s3[7]), tonumber(s3[8]), tonumber(s3[9])}}
 
+		elseif s2[1] == "marioplayercolors" then
+			if mariomariocolors[tonumber(s2[2])] == nil then
+				mariomariocolors[tonumber(s2[2])] = {}
+			end
+			s3 = s2[3]:split(",")
+			mariomariocolors[tonumber(s2[2])] = {{tonumber(s3[1]), tonumber(s3[2]), tonumber(s3[3])}, {tonumber(s3[4]), tonumber(s3[5]), tonumber(s3[6])}, {tonumber(s3[7]), tonumber(s3[8]), tonumber(s3[9])}}
+
 		elseif s2[1] == "portalhues" then
 			if portalhues[tonumber(s2[2])] == nil then
 				portalhues[tonumber(s2[2])] = {}
@@ -969,9 +1079,26 @@ function loadconfig()
 			s3 = s2[3]:split(",")
 			portalhues[tonumber(s2[2])] = {tonumber(s3[1]), tonumber(s3[2])}
 
-		elseif s2[1] == "mariohats" then
+		elseif s2[1] == "playerhats" then
 			local playerno = tonumber(s2[2])
 			mariohats[playerno] = {}
+
+			if s2[3] == "playerhats" then --SAVING WENT WRONG OMG
+
+			elseif s2[3] then
+				s3 = s2[3]:split(",")
+				for i = 1, #s3 do
+					local hatno = tonumber(s3[i])
+					if hatno > hatcount then
+						hatno = hatcount
+					end
+					mariohats[playerno][i] = hatno
+				end
+			end
+
+		elseif s2[1] == "mariohats" then
+			local playerno = tonumber(s2[2])
+			mariomariohats[playerno] = {}
 
 			if s2[3] == "mariohats" then --SAVING WENT WRONG OMG
 
@@ -982,7 +1109,7 @@ function loadconfig()
 					if hatno > hatcount then
 						hatno = hatcount
 					end
-					mariohats[playerno][i] = hatno
+					mariomariohats[playerno][i] = hatno
 				end
 			end
 
@@ -1022,7 +1149,39 @@ function loadconfig()
 					reachedworlds[s2[2]][i] = true
 				end
 			end
+		elseif s2[1] == "minimap" then
+			if s2[2] == "true" then tasminimapenabled = true else tasminimapenabled = false end
+			if s2[3] ~= nil then
+				tasminimapwidth = tonumber(s2[3])
+			else
+				tasminimapwidth = 25
+			end
+		elseif s2[1] == "timeroffset" then
+			speedtimeroffset = tonumber(s2[2])
+		elseif s2[1] == "speedinfo" then
+			if s2[2] == "true" then speedinfoenabled = true else speedinfoenabled = false end
+		elseif s2[1] == "infokey" then
+			infokey = s2[2]
+		elseif s2[1] == "endtimerkey" then
+			endtimerkey = s2[2]
+		elseif s2[1] == "textoutline" then
+			if s2[2] == "true" then textoutline = true else textoutline = false end
+		elseif s2[1] == "timer" then
+			if s2[2] == "true" then speedtimerenabled = true else speedtimerenabled = false end
+		elseif s2[1] == "dothemario" then
+			if s2[2] == "true" then charmario = true else charmario = false end
+		elseif s2[1] == "playername" then
+			playername = s2[2]
 		end
+	end
+
+	if charmario then
+		local tempcolors = mariocolors
+		local temphats = mariohats
+		mariocolors = mariomariocolors
+		mariohats = mariomariohats
+		mariomariocolors = tempcolors
+		mariomariohats = temphats
 	end
 
 	for i = 1, math.max(4, players) do
@@ -1047,6 +1206,8 @@ function defaultconfig()
 	controls = {}
 
 	local i = 1
+	infokey = "i"
+	endtimerkey = "o"
 	controls[i] = {}
 	controls[i]["right"] = {"d"}
 	controls[i]["left"] = {"a"}
@@ -1080,18 +1241,20 @@ function defaultconfig()
 	-- PORTAL COLORS --
 	-------------------
 
-	portalhues = {}
+	portalhues = {{0.6593,0.5775}, {0.058,0.0957}, {0.9995,0.9259}, {0.8262,0.7521}}
 	portalcolor = {}
 	for i = 1, 4 do
-		local players = 4
-		portalhues[i] = {(i-1)*(1/players), (i-1)*(1/players)+0.5/players}
 		portalcolor[i] = {getrainbowcolor(portalhues[i][1]), getrainbowcolor(portalhues[i][2])}
 	end
 
 	--hats.
 	mariohats = {}
 	for i = 1, 4 do
-		mariohats[i] = {1}
+		mariohats[i] = {}
+	end
+	mariomariohats = {}
+	for i = 1, 4 do
+		mariomariohats[i] = {1}
 	end
 
 	------------------
@@ -1102,12 +1265,21 @@ function defaultconfig()
 	--3: skin (yellow-orange)
 
 	mariocolors = {}
-	mariocolors[1] = {{224/255,  32/255,   0/255}, {136/255, 112/255,   0/255}, {252/255, 152/255,  56/255}}
-	mariocolors[2] = {{255/255, 255/255, 255/255}, {  0/255, 160/255,   0/255}, {252/255, 152/255,  56/255}}
-	mariocolors[3] = {{  0/255,   0/255,   0/255}, {200/255,  76/255,  12/255}, {252/255, 188/255, 176/255}}
-	mariocolors[4] = {{ 32/255,  56/255, 236/255}, {  0/255, 128/255, 136/255}, {252/255, 152/255,  56/255}}
+	mariocolors[1] = {{0.7205347125245 ,0.76542343499559,0.82990235468628}, {0.55440059306977,0.50939950540516,0.56581247375146}, {0.30668935751926,0.29266084644523 ,0.33427530897087}}
+	mariocolors[2] = {{0.85262256749522,0.85076205698846,0.48361258389082}, {0.87058823529412,0.53567000489371,0.31866888805731}, {0.70956878679549,0.16051483974318 ,0.15852982692476}}
+	mariocolors[3] = {{0.42340916816474,0.25665059673563,0.31683645689239}, {0.17906255655849,0.1624370430578 ,0.16008490731794}, {0.71780335673716,0.089757554701475,0.14370866057865}}
+	mariocolors[4] = {{0.17710847553852,0.27428086643089,0.59443428685396}, {0               ,0.17254901960784,0.29411764705882}, {0.20392156862745,0.52156862745098 ,0.52941176470588}}
 	for i = 5, players do
 		mariocolors[i] = mariocolors[math.random(4)]
+	end
+
+	mariomariocolors = {}
+	mariomariocolors[1] = {{224/255,  32/255,   0/255}, {136/255, 112/255,   0/255}, {252/255, 152/255,  56/255}}
+	mariomariocolors[2] = {{255/255, 255/255, 255/255}, {  0/255, 160/255,   0/255}, {252/255, 152/255,  56/255}}
+	mariomariocolors[3] = {{  0/255,   0/255,   0/255}, {200/255,  76/255,  12/255}, {252/255, 188/255, 176/255}}
+	mariomariocolors[4] = {{ 32/255,  56/255, 236/255}, {  0/255, 128/255, 136/255}, {252/255, 152/255,  56/255}}
+	for i = 5, players do
+		mariomariocolors[i] = mariomariocolors[math.random(4)]
 	end
 
 	--STARCOLORS
@@ -1124,6 +1296,15 @@ function defaultconfig()
 	volume = 1
 	mappack = "smb"
 	vsync = false
+
+	tasminimapenabled = true
+	tasminimapwidth = 25
+	speedtimerenabled = true
+	speedinfoenabled = true
+	speedtimeroffset = 0.05
+	charmario = false
+	playername = "tasb0t"
+	textoutline = true
 
 	reachedworlds = {}
 end
@@ -1228,12 +1409,21 @@ function love.keypressed(key, unicode)
 		love.mouse.setGrabbed(not love.mouse.isGrabbed())
 	end
 
+	if key == infokey then
+		speedinfoenabled = not speedinfoenabled
+	end
+	if key == endtimerkey then
+		speedtimerend = true
+		speedtimer = speedtimer+love.timer.getDelta()
+		speedleveltime = speedleveltime+love.timer.getDelta()
+	end
+
 	if gamestate == "menu" or gamestate == "mappackmenu" or gamestate == "onlinemenu" or gamestate == "options" then
 		--konami code
 		if key == konami[konamii] then
 			konamii = konamii + 1
 			if konamii == #konami+1 then
-				if konamisound:isStopped() then
+				if not konamisound:isPlaying() then
 					playsound(konamisound)
 				end
 				gamefinished = true
@@ -1444,6 +1634,27 @@ function getaveragecolor(imgdata, cox, coy)
 	return r, g, b
 end
 
+function gettrueaveragecolor(imgdata)
+	local xstart = 0
+	local ystart = 0
+
+	local r, g, b = 0, 0, 0
+
+	local count = 0
+
+	for x = xstart, xstart+imgdata:getWidth()-1 do
+		for y = ystart, ystart+imgdata:getHeight()-1 do
+			local pr, pg, pb, a = imgdata:getPixel(x, y)
+			r, g, b = r+(pr*a), g+(pg*a), b+(pb*a)
+			count = count + 1
+		end
+	end
+
+	r, g, b = r/count, g/count, b/count
+
+	return r, g, b
+end
+
 function keyprompt_update()
 	if keyprompt then
 		local jss = love.joystick.getJoysticks()
@@ -1547,6 +1758,7 @@ function getupdate()
 end
 
 function properprint(s, x, y)
+	--[[
 	local startx = x
 	for i = 1, string.len(tostring(s)) do
 		local char = string.sub(s, i, i)
@@ -1555,6 +1767,77 @@ function properprint(s, x, y)
 			y = y + 10*scale
 		elseif fontquads[char] then
 			love.graphics.draw(fontimage, fontquads[char], x+((i-1)*8)*scale, y, 0, scale, scale)
+		end
+	end
+	--]]
+
+	local scale = sc or scale
+	local startx = x
+	local skip = 0
+	for i = 1, string.len(tostring(s)) do
+		if skip > 0 then
+			skip = skip - 1
+		else
+			local char = string.sub(s, i, i)
+			if string.sub(s, i, i+3) == "_dir" and tonumber(string.sub(s, i+4, i+4)) then
+				love.graphics.draw(directionsimg, directionsquad[tonumber(string.sub(s, i+4, i+4))], x+((i-1)*8+1)*scale, y, 0, scale, scale)
+				skip = 4
+			elseif char == "|" then
+				x = startx-((i)*8)*scale
+				y = y + 10*scale
+			elseif fontquads[char] then
+				love.graphics.draw(fontimage, fontquads[char], x+((i-1)*8+1)*scale, y, 0, scale, scale)
+			end
+		end
+	end
+end
+
+function borderprint(s, x, y)
+	--[[
+	local startx = x
+	for i = 1, string.len(tostring(s)) do
+		local char = string.sub(s, i, i)
+		if char == "|" then
+			x = startx-((i)*8)*scale
+			y = y + 10*scale
+		elseif fontquads[char] then
+			love.graphics.draw(fontimage, fontquads[char], x+((i-1)*8)*scale, y, 0, scale, scale)
+		end
+	end
+	--]]
+
+	local scale = sc or scale
+	local startx = x
+	local skip = 0
+	if textoutline then
+		for i = 1, string.len(tostring(s)) do
+			if skip > 0 then
+				skip = skip - 1
+			else
+				local char = string.sub(s, i, i)
+				if char == "|" then
+					x = startx-((i)*8)*scale
+					y = y + 10*scale
+				elseif fontquadsback[char] then
+					love.graphics.draw(fontimageback, fontquadsback[char], x+((i-1)*8)*scale, y-1*scale, 0, scale, scale)
+				end
+			end
+		end
+	end
+	for i = 1, string.len(tostring(s)) do
+		if skip > 0 then
+			skip = skip - 1
+		else
+			local char = string.sub(s, i, i)
+			if string.sub(s, i, i+3) == "_dir" and tonumber(string.sub(s, i+4, i+4)) then
+				love.graphics.draw(directionsimg, directionsquad[tonumber(string.sub(s, i+4, i+4))], x+((i-1)*8+1)*scale, y, 0, scale, scale)
+				skip = 4
+			elseif char == "|" then
+				x = startx-((i)*8)*scale
+				y = y + 10*scale
+			elseif fontquads[char] then
+				love.graphics.draw(fontimage, fontquads[char], x+((i-1)*8+1)*scale, y, 0, scale, scale)
+			end
 		end
 	end
 end
@@ -1590,5 +1873,8 @@ function loadcustombackground()
 		custombackgroundimg[i] = love.graphics.newImage("graphics/SMB/portalbackground.png")
 		custombackgroundwidth[i] = custombackgroundimg[i]:getWidth()/16
 		custombackgroundheight[i] = custombackgroundimg[i]:getHeight()/16
+		portalbackground = true
+	else
+		portalbackground = false
 	end
 end

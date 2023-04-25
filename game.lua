@@ -1015,47 +1015,6 @@ function game_draw()
 			end
 		end
 
-		---UI
-		love.graphics.setColor(1, 1, 1)
-		love.graphics.translate(0, -yoffset*scale)
-		if yoffset < 0 then
-			love.graphics.translate(0, yoffset*scale)
-		end
-
-		properprint("mario", uispace*.5 - 24*scale, 8*scale)
-		properprint(addzeros(marioscore, 6), uispace*0.5-24*scale, 16*scale)
-
-		properprint("*", uispace*1.5-8*scale, 16*scale)
-
-		love.graphics.draw(coinanimationimage, coinanimationquads[spriteset][coinframe], uispace*1.5-16*scale, 16*scale, 0, scale, scale)
-		properprint(addzeros(mariocoincount, 2), uispace*1.5-0*scale, 16*scale)
-
-		properprint("world", uispace*2.5 - 20*scale, 8*scale)
-		properprint(marioworld .. "-" .. mariolevel, uispace*2.5 - 12*scale, 16*scale)
-
-		properprint("time", uispace*3.5 - 16*scale, 8*scale)
-		if editormode then
-			if linktool then
-				properprint("link", uispace*3.5 - 16*scale, 16*scale)
-			else
-				properprint("edit", uispace*3.5 - 16*scale, 16*scale)
-			end
-		else
-			properprint(addzeros(math.ceil(mariotime), 3), uispace*3.5-8*scale, 16*scale)
-		end
-
-		if players > 1 then
-			for i = 1, players do
-				local x = (width*16)/players/2 + (width*16)/players*(i-1)
-				if mariolivecount ~= false then
-					properprint("p" .. i .. " * " .. mariolives[i], (x-string.len("p" .. i .. " * " .. mariolives[i])*4+4)*scale, 25*scale)
-					love.graphics.setColor(mariocolors[i][1])
-					love.graphics.rectangle("fill", (x-string.len("p" .. i .. " * " .. mariolives[i])*4-3)*scale, 25*scale, 7*scale, 7*scale)
-					love.graphics.setColor(1, 1, 1, 1)
-				end
-			end
-		end
-
 		love.graphics.setColor(1, 1, 1)
 		--vines
 		for j, w in pairs(objects["vine"]) do
@@ -1223,6 +1182,118 @@ function game_draw()
 		--miniblocks
 		for i, v in pairs(miniblocks) do
 			v:draw()
+		end
+		
+		--Geldispensers
+		for j, w in pairs(objects["geldispenser"]) do
+			w:draw()
+		end
+
+		--Cubedispensers
+		for j, w in pairs(objects["cubedispenser"]) do
+			w:draw()
+		end
+
+		--Emancipationgrills
+		for j, w in pairs(emancipationgrills) do
+			w:draw()
+		end
+
+		--Doors
+		for j, w in pairs(objects["door"]) do
+			w:draw()
+		end
+
+		--Wallindicators
+		for j, w in pairs(objects["wallindicator"]) do
+			w:draw()
+		end
+
+		--Walltimers
+		for j, w in pairs(objects["walltimer"]) do
+			w:draw()
+		end
+
+		--Notgates
+		for j, w in pairs(objects["notgate"]) do
+			w:draw()
+		end
+
+		---UI
+		love.graphics.setColor(1, 1, 1)
+		love.graphics.translate(0, -yoffset*scale)
+		if yoffset < 0 then
+			love.graphics.translate(0, yoffset*scale)
+		end
+
+		borderprint(playername, uispace*.5 - 24*scale, 8*scale)
+		
+		if speedinfoenabled then
+			for i = 1, players do
+				if players > 1 then
+					love.graphics.setColor(mariocolors[i][1])
+				end
+				local x = uispace*0.5-24*scale+(((i-1)%2)*80*scale)
+				local y = 0
+				if i > 2 then
+					y = 40*scale
+				end
+				borderprint("xs:"..string.format("%2.3f", objects["player"][i].speedx), x, 32*scale+y)
+				borderprint("ys:"..string.format("%2.3f", objects["player"][i].speedy), x, 40*scale+y)
+				borderprint(" x:"..string.format("%2.3f", objects["player"][i].x), x, 48*scale+y)
+				borderprint(" y:"..string.format("%2.3f", objects["player"][i].y), x, 56*scale+y)
+				if portaldelay[i] == 0 then
+					borderprint("pg:loaded", x, 64*scale+y)
+				else
+					borderprint("pg:"..string.format("%2.3f", portaldelay[i]), x, 64*scale+y)
+				end
+			end
+			if mariotime ~= 0 then
+				local firewc = tonumber(string.sub(math.ceil(mariotime), -1, -1))
+				if firewc ~= 1 and firewc ~= 3 and firewc ~= 6 then
+					love.graphics.setColor(1,1,1,1)
+				else
+					love.graphics.setColor(1,0.2,0.2,1)
+				end
+				borderprint(addzeros(math.ceil(mariotime), 3), uispace*3.5-8*scale, 48*scale)
+			end
+			love.graphics.setColor(1,1,1,1)
+			borderprint(addzeros(marioscore, 6), uispace*0.5-24*scale, 16*scale)
+		else
+			borderprint(addzeros(marioscore, 6), uispace*0.5-24*scale, 16*scale)
+		end
+
+		borderprint("*", uispace*1.5-8*scale, 16*scale)
+
+		love.graphics.draw(coinanimationimage, coinanimationquads[spriteset][coinframe], uispace*1.5-16*scale, 16*scale, 0, scale, scale)
+		borderprint(addzeros(mariocoincount, 2), uispace*1.5-0*scale, 16*scale)
+
+		borderprint("world", uispace*2.5 - 20*scale, 8*scale)
+		borderprint(marioworld .. "-" .. mariolevel, uispace*2.5 - 12*scale, 16*scale)
+
+		if editormode then
+			if linktool then
+				borderprint("link", uispace*3.5 - 16*scale, 16*scale)
+			else
+				borderprint("edit", uispace*3.5 - 16*scale, 16*scale)
+			end
+		elseif speedtimerenabled then
+			if speedtimerend then
+				love.graphics.setColor(0.2, 1, 0.2, 1)
+			end
+			borderprint("time", uispace*3.5 - 16*scale, 8*scale)
+			--borderprint(addzeros(math.ceil(mariotime), 3), uispace*3.5-8*scale, 16*scale)
+			borderprint(string.format("%02d",math.floor(speedtimer/60))..":"..string.format("%02d",math.floor(speedtimer)%60).."."..string.format("%02d",math.floor(speedtimer*100)%100), uispace*3.5-48*scale, 16*scale)
+			if levelfinished and levelstarted then
+				love.graphics.setColor(0.2, 1, 0.2, 1)
+			end
+			borderprint("level time", uispace*3.5 - 64*scale, 24*scale)
+			--borderprint(string.format("%02d",math.floor((mariotimelimit-mariotime)/2.5/60))..":"..string.format("%02d",math.floor((mariotimelimit-mariotime)/2.5)%60).."."..string.format("%02d",math.floor((mariotimelimit-mariotime)/2.5*100)%100), uispace*3.5-48*scale, 32*scale)
+			borderprint(string.format("%02d",math.floor(speedleveltime/60))..":"..string.format("%02d",math.floor(speedleveltime)%60).."."..string.format("%02d",math.floor(speedleveltime*100)%100), uispace*3.5-48*scale, 32*scale)
+			love.graphics.setColor(1,1,1,1)
+		else
+			borderprint("time", uispace*3.5 - 16*scale, 8*scale)
+			borderprint(addzeros(math.ceil(mariotime), 3), uispace*3.5-8*scale, 16*scale)
 		end
 
 		--OBJECTS
@@ -1476,41 +1547,6 @@ function game_draw()
 			w:draw()
 		end
 
-		--Geldispensers
-		for j, w in pairs(objects["geldispenser"]) do
-			w:draw()
-		end
-
-		--Cubedispensers
-		for j, w in pairs(objects["cubedispenser"]) do
-			w:draw()
-		end
-
-		--Emancipationgrills
-		for j, w in pairs(emancipationgrills) do
-			w:draw()
-		end
-
-		--Doors
-		for j, w in pairs(objects["door"]) do
-			w:draw()
-		end
-
-		--Wallindicators
-		for j, w in pairs(objects["wallindicator"]) do
-			w:draw()
-		end
-
-		--Walltimers
-		for j, w in pairs(objects["walltimer"]) do
-			w:draw()
-		end
-
-		--Notgates
-		for j, w in pairs(objects["notgate"]) do
-			w:draw()
-		end
-
 		--particles
 		for j, w in pairs(portalparticles) do
 			w:draw()
@@ -1757,6 +1793,69 @@ function game_draw()
 	for i = 2, #splitscreen do
 		love.graphics.line((i-1)*width*16*scale/#splitscreen, 0, (i-1)*width*16*scale/#splitscreen, 15*16*scale)
 	end
+	
+	if tasminimapenabled == true then
+		love.graphics.push()
+			--MINIMAP
+			local _scale = scale/2
+			local tasminimapy = (love.graphics.getHeight()/_scale)-36
+			local tasminimapx = 2
+			--local tasminimapwidth = 5
+			love.graphics.setColor(1, 1, 1)
+			love.graphics.rectangle("fill", tasminimapx*_scale, tasminimapy*_scale, ((math.min((tasminimapwidth*16)-4,mapwidth)*2)+4)*_scale, 34*_scale)
+			love.graphics.setColor(unpack(backgroundcolor[background]))
+			if portalbackground then
+				love.graphics.setColor(1,1,1,1)
+			end
+			love.graphics.rectangle("fill", (tasminimapx+2)*_scale, (tasminimapy+2)*_scale, ((math.min((tasminimapwidth*16)-4,mapwidth)*2))*_scale, 30*_scale)
+
+			for i=players,1,-1 do
+				love.graphics.setColor(1,1,1,0.2)
+				love.graphics.rectangle("fill", (objects["player"][i].x*2+tasminimapx-tasminimapscroll*2)*_scale, (objects["player"][i].y*2+tasminimapy)*_scale,6*_scale,6*_scale)
+			end
+
+			local lmap = map
+
+			love.graphics.setScissor((tasminimapx+2)*_scale, (tasminimapy+2)*_scale, ((math.min((tasminimapwidth*16)-4,mapwidth)*2))*_scale, 30*_scale)
+
+			for x = 1,mapwidth do
+				for y = 1, 15 do
+					if x-tasminimapscroll > 0 and x-tasminimapscroll < mapwidth+1 then
+						local id = lmap[x][y][1]
+						if id ~= nil and id ~= 0 and tilequads[id].invisible == false then
+							if rgblist[id] then
+								love.graphics.setColor(unpack(rgblist[id]))
+								love.graphics.rectangle("fill", (tasminimapx+x*2-tasminimapscroll*2)*_scale, (tasminimapy+y*2)*_scale, 2*_scale, 2*_scale)
+							end
+						end
+					end
+				end
+			end
+
+			love.graphics.setScissor()
+			if (tasminimapwidth*16)-4 < mapwidth then
+				tasminimapscroll = (splitxscroll[1]+2+width/2)-(tasminimapwidth*16/2)
+				if tasminimapscroll < 0 then
+					tasminimapscroll = 0
+				elseif tasminimapscroll > mapwidth-(tasminimapwidth*16)+4 then
+					tasminimapscroll = mapwidth-(tasminimapwidth*16)+4
+				end
+			end
+
+		love.graphics.scale(0.5)
+
+			for i=players,1,-1 do
+				love.graphics.setColor(portalcolor[i][1])
+				drawrectangle(objects["player"][i].x*2+tasminimapx-tasminimapscroll*2+2, objects["player"][i].y*2+tasminimapy+2,2,2)
+			end
+
+			love.graphics.setColor(0, 0, 1)
+			drawrectangle(splitxscroll[1]*2+tasminimapx-tasminimapscroll*2,   tasminimapy,   (math.min(width,mapwidth)+2)*2, 34)
+			drawrectangle(splitxscroll[1]*2+tasminimapx-tasminimapscroll*2+1, tasminimapy+1, (math.min(width,mapwidth)+1)*2, 32)
+
+		love.graphics.pop()
+		love.graphics.setColor(1, 1, 1)
+	end
 
 	if editormode then
 		editor_draw()
@@ -1916,6 +2015,7 @@ function startlevel(level)
 		mariosublevel = 0
 		prevsublevel = false
 		mariotime = 400
+		levelstarted = true
 	end
 
 	--MISC VARS
@@ -3876,35 +3976,30 @@ function upkey(i)
 end
 
 function checkkey(s)
+	local joysticks = love.joystick.getJoysticks()
+	
 	if s[1] == "joy" then
-		local jss = love.joystick.getJoysticks()
-		local js = jss[s[2]]
-
-		if not js then
-			return
-		end
-
 		if s[3] == "hat" then
-			if js:getHat(s[4]) == s[5] then
+			if joysticks[s[2]]:getHat(s[4]) == s[5] then
 				return true
 			else
 				return false
 			end
 		elseif s[3] == "but" then
-			if js:isDown(s[4]) then
+			if joysticks[s[2]]:isDown(s[4]) then
 				return true
 			else
 				return false
 			end
 		elseif s[3] == "axe" then
 			if s[5] == "pos" then
-				if js:getAxis(s[4]) > joystickdeadzone then
+				if joysticks[s[2]]:getAxis(s[4]) > joystickdeadzone then
 					return true
 				else
 					return false
 				end
 			else
-				if js:getAxis(s[4]) < -joystickdeadzone then
+				if joysticks[s[2]]:getAxis(s[4]) < -joystickdeadzone then
 					return true
 				else
 					return false
