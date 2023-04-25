@@ -2986,7 +2986,7 @@ function shootportal(plnumber, i, sourcex, sourcey, direction)
 		return
 	end
 	--portalgun delay
-	if portaldelay[plnumber] > 0 then
+	if portaldelay[plnumber] > epsilon then -- epsilon ensures that the delay is consistent through floating point errors
 		return
 	else
 		portaldelay[plnumber] = portalgundelay
@@ -3977,9 +3977,11 @@ end
 
 function checkkey(s)
 	local joysticks = love.joystick.getJoysticks()
-	
+
 	if s[1] == "joy" then
-		if s[3] == "hat" then
+		if joysticks[s[2]] == nil then
+			return false
+		elseif s[3] == "hat" then
 			if joysticks[s[2]]:getHat(s[4]) == s[5] then
 				return true
 			else
@@ -4083,6 +4085,95 @@ function game_joystickreleased( joystick, button )
 				if joystick == tonumber(s[2]) and button == tonumber(s[4]) then
 					objects["player"][i]:stopjump()
 					return
+				end
+			end
+		end
+	end
+end
+
+function game_joystickaxis(joystick, axis, value, stickmoved, shouldermoved)
+	if pausemenuopen then
+		return
+	end
+	if endpressbutton then
+		endgame()
+		return
+	end
+	for i = 1, players do
+		if not noupdate and objects["player"][i].controlsenabled then
+			local s1 = controls[i]["left"]
+			local s2 = controls[i]["right"]
+			if s1[1] == "joy" and joystick == s1[2] and s1[3] == "axe" and s1[4] == axis and stickmoved and value < 0 then
+				objects["player"][i]:leftkey()
+				return
+			elseif s2[1] == "joy" and joystick == s2[2] and s2[3] == "axe" and s2[4] == axis and stickmoved and value > 0 then
+				objects["player"][i]:rightkey()
+				return
+			end
+			
+			if i ~= mouseowner then
+				local s = controls[i]["portal1"]
+				if s and s[1] == "joy" then
+					if s[3] == "axe" and s[4] == axis then
+						if joystick == s[2] and shouldermoved then
+							shootportal(i, 1, objects["player"][i].x+6/16, objects["player"][i].y+6/16, objects["player"][i].pointingangle)
+							return
+						end
+					end
+				end
+				
+				local s = controls[i]["portal2"]
+				if s and s[1] == "joy" then
+					if s[3] == "axe" and s[4] == axis then
+						if joystick == s[2] and shouldermoved then
+							shootportal(i, 2, objects["player"][i].x+6/16, objects["player"][i].y+6/16, objects["player"][i].pointingangle)
+							return
+						end
+					end
+				end
+			end
+		end
+	end
+end
+function game_joystickhat(joystick, hat, direction)
+	if pausemenuopen then
+		return
+	end
+	if endpressbutton then
+		endgame()
+		return
+	end
+	for i = 1, players do
+		if not noupdate and objects["player"][i].controlsenabled then
+			local s1 = controls[i]["left"]
+			local s2 = controls[i]["right"]
+			if s1[1] == "joy" and joystick == s1[2] and s1[3] == "hat" and s1[4] == hat and s1[5]:find(direction) then
+				objects["player"][i]:leftkey()
+				return
+			elseif s2[1] == "joy" and joystick == s2[2] and s2[3] == "hat" and s2[4] == hat and s2[5]:find(direction) then
+				objects["player"][i]:rightkey()
+				return
+			end
+		end
+		
+		if i ~= mouseowner then
+			local s = controls[i]["portal1"]
+			if s and s[1] == "joy" then
+				if s[3] == "hat" and s[4] == hat then
+					if joystick == s[2] and s[5]:find(direction) then
+						shootportal(i, 1, objects["player"][i].x+6/16, objects["player"][i].y+6/16, objects["player"][i].pointingangle)
+						return
+					end
+				end
+			end
+			
+			local s = controls[i]["portal2"]
+			if s and s[1] == "joy" then
+				if s[3] == "hat" and s[4] == hat then
+					if joystick == s[2] and s[5]:find(direction) then
+						shootportal(i, 2, objects["player"][i].x+6/16, objects["player"][i].y+6/16, objects["player"][i].pointingangle)
+						return
+					end
 				end
 			end
 		end

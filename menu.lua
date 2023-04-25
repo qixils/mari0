@@ -58,7 +58,7 @@ end
 function menu_update(dt)
 	--coinanimation
 	coinanimation = coinanimation + dt*6.75
-	while coinanimation > 6 do
+	while coinanimation >= 6 do
 		coinanimation = coinanimation - 5
 	end
 
@@ -211,7 +211,7 @@ function menu_draw()
 	elseif math.floor(coinanimation) == 5 then
 		coinframe = 1
 	else
-		coinframe = math.floor(coinanimation)
+		coinframe = math.max(1, math.floor(coinanimation))
 	end
 
 	for y = 1, 15 do
@@ -950,10 +950,12 @@ function menu_draw()
 			end
 
 			properprint("vsync:", 30*scale, 150*scale)
-			if vsync then
+			if vsync == 1 then
 				properprint("on", (180-16)*scale, 150*scale)
-			else
+			elseif vsync == 0 then
 				properprint("off", (180-24)*scale, 150*scale)
+			else
+				properprint("adaptive", (180-64)*scale, 150*scale)
 			end
 
 			love.graphics.setColor(0.4, 0.4, 0.4)
@@ -1837,7 +1839,7 @@ function menu_keypressed(key, unicode)
 						soundenabled = true
 					end
 				elseif optionsselection == 8 then
-					vsync = not vsync
+					vsync = ((vsync + 2) % 3) - 1
 					changescale(scale)
 				end
 			elseif optionstab == 4 then
@@ -1941,7 +1943,7 @@ function menu_keypressed(key, unicode)
 						playsound(coinsound)
 					end
 				elseif optionsselection == 8 then
-					vsync = not vsync
+					vsync = (vsync % 3) - 1
 					changescale(scale)
 				end
 			elseif optionstab == 4 then
@@ -2024,6 +2026,14 @@ function menu_joystickreleased(joystick, button)
 
 end
 
+function menu_joystickaxis(joystick, axis, value, stickmoved, shouldermoved)
+
+end
+
+function menu_joystickhat(joystick, hat, direction)
+
+end
+
 function keypromptenter(t, ...)
 	local arg = {...}
 	if t == "key" and (arg[1] == ";" or arg[1] == "," or arg[1] == "," or arg[1] == "-") then
@@ -2031,7 +2041,7 @@ function keypromptenter(t, ...)
 	end
 	buttonerror = false
 	axiserror = false
-	local buttononly = {"run", "jump", "reload", "use", "portal1", "portal2"}
+	local buttononly = {"run", "jump", "reload", "use"}
 	local axisonly = {"aimx", "aimy"}
 	if t ~= "key" or arg[1] ~= "escape" then
 		if t == "key" then

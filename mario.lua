@@ -1024,18 +1024,18 @@ function mario:updateangle()
 		self.pointingangle = math.atan2(self.x+6/16-xscroll-(love.mouse.getX()/16/scale), (self.y+6/16-.5)-(love.mouse.getY()/16/scale))
 	elseif #controls[self.playernumber]["aimx"] > 0 then
 		local x, y
-		
+
 		local joysticks = love.joystick.getJoysticks()
 		local s = controls[self.playernumber]["aimx"]
-		if s[1] == "joy" then
+		if s[1] == "joy" and joysticks[s[2]] ~= nil then
 			x = -joysticks[s[2]]:getAxis(s[4])
 			if s[5] == "neg" then
 				x = -x
 			end
 		end
-
+		
 		s = controls[self.playernumber]["aimy"]
-		if s[1] == "joy" then
+		if s[1] == "joy" and joysticks[s[2]] ~= nil then
 			y = -joysticks[s[2]]:getAxis(s[4])
 			if s[5] == "neg" then
 				y = -y

@@ -1,10 +1,7 @@
 --[[
-	STEAL MY SHIT AND I'LL FUCK YOU UP
-	PRETTY MUCH EVERYTHING BY MAURICE GU�GAN AND IF SOMETHING ISN'T BY ME THEN IT SHOULD BE OBVIOUS OR NOBODY CARES
+	PRETTY MUCH EVERYTHING BY MAURICE GUÉGAN AND IF SOMETHING ISN'T BY ME THEN IT SHOULD BE OBVIOUS OR NOBODY CARES
 
-	THIS AWESOME PIECE OF CELESTIAL AMBROSIA IS RELEASED AS NON-COMMERCIAL, SHARE ALIKE, WHATEVER. YOU MAY PRINT OUT THIS CODES AND USE IT AS WALLPAPER IN YOUR BATHROOM.
-	FOR SPECIFIC LICENSE (I know you linux users get a hard on when it comes to licenses) SEE http://creativecommons.org/licenses/by-nc-sa/3.0/
-	NOW GO AWAY (or stay and modify shit. I don't care as long as you stick to the above license.)
+	Licensed under MIT. You should not have received a copy of the MIT license with this program because just google for it, cmon.
 ]]
 
 function love.load()
@@ -54,6 +51,24 @@ function love.load()
 	love.window.setIcon(iconimg)
 
 	love.graphics.setDefaultFilter("nearest", "nearest")
+
+	axisDeadZones = {}
+	joysticks = love.joystick.getJoysticks()
+	if #joysticks > 0 then
+		for i, v in ipairs(joysticks) do
+			axisDeadZones[i] = {}
+			for j=1, v:getAxisCount() do
+				axisDeadZones[i][j] = {}
+				axisDeadZones[i][j]["stick"] = true
+				axisDeadZones[i][j]["shoulder"] = true
+			end
+			for _, j in pairs({"leftx", "lefty", "rightx", "righty", "triggerleft", "triggerright"}) do
+				axisDeadZones[i][j] = {}
+				axisDeadZones[i][j]["stick"] = true
+				axisDeadZones[i][j]["shoulder"] = true
+			end
+		end
+	end
 
 	love.graphics.setBackgroundColor(0, 0, 0)
 
@@ -873,7 +888,7 @@ function saveconfig()
 		end
 		for j = 1, 3 do
 			for k = 1, 3 do
-				s = s .. mariocolors[i][j][k]
+				s = s .. round(mariocolors[i][j][k], 4)
 				if j == 3 and k == 3 then
 					s = s .. ";\r\n"
 				else
@@ -960,9 +975,7 @@ function saveconfig()
 
 	s = s .. "mappack:" .. mappack .. ";\r\n"
 
-	if vsync then
-		s = s .. "vsync;\r\n"
-	end
+	s = s .. "vsync:" .. vsync .. ";\r\n"
 
 	if gamefinished then
 		s = s .. "gamefinished;\r\n"
@@ -1051,6 +1064,8 @@ function loadconfig()
 				for k = 2, #s4 do
 					if tonumber(s4[k]) ~= nil then
 						controls[tonumber(s2[2])][s4[1]][k-1] = tonumber(s4[k])
+					elseif s4[k] == " " then
+						controls[tonumber(s2[2])][s4[1]][k-1] = "space" -- migrate pre 0.10.2 config
 					else
 						controls[tonumber(s2[2])][s4[1]][k-1] = s4[k]
 					end
@@ -1063,7 +1078,23 @@ function loadconfig()
 				mariocolors[tonumber(s2[2])] = {}
 			end
 			s3 = s2[3]:split(",")
-			mariocolors[tonumber(s2[2])] = {{tonumber(s3[1]), tonumber(s3[2]), tonumber(s3[3])}, {tonumber(s3[4]), tonumber(s3[5]), tonumber(s3[6])}, {tonumber(s3[7]), tonumber(s3[8]), tonumber(s3[9])}}
+			-- migrate pre 11.0 config
+			local s4 = {}
+			local migrate = false;
+			for j = 1, #s3 do
+				if tonumber(s3[j]) > 1 then
+					migrate = true
+					break
+				end
+			end
+			for j = 1, #s3 do
+				if migrate then
+					s4[j] = tonumber(s3[j]) / 255
+				else
+					s4[j] = tonumber(s3[j])
+				end
+			end
+			mariocolors[tonumber(s2[2])] = {{s4[1], s4[2], s4[3]}, {s4[4], s4[5], s4[6]}, {s4[7], s4[8], s4[9]}}
 
 		elseif s2[1] == "marioplayercolors" then
 			if mariomariocolors[tonumber(s2[2])] == nil then
@@ -1140,7 +1171,11 @@ function loadconfig()
 		elseif s2[1] == "gamefinished" then
 			gamefinished = true
 		elseif s2[1] == "vsync" then
-			vsync = true
+			if #s2 > 1 then
+				vsync = tonumber(s2[2])
+			else
+				vsync = -1
+			end
 		elseif s2[1] == "reachedworlds" then
 			reachedworlds[s2[2]] = {}
 			local s3 = s2[3]:split(",")
@@ -1295,7 +1330,7 @@ function defaultconfig()
 	scale = 2
 	volume = 1
 	mappack = "smb"
-	vsync = false
+	vsync = -1
 
 	tasminimapenabled = true
 	tasminimapwidth = 25
@@ -1423,9 +1458,7 @@ function love.keypressed(key, unicode)
 		if key == konami[konamii] then
 			konamii = konamii + 1
 			if konamii == #konami+1 then
-				if not konamisound:isPlaying() then
-					playsound(konamisound)
-				end
+				playsound(konamisound)
 				gamefinished = true
 				saveconfig()
 				konamii = 1
@@ -1529,6 +1562,61 @@ function love.joystickreleased(joystick, button)
 		game_joystickreleased(joystick:getID(), button)
 	end
 end
+
+function love.joystickaxis(joystick, axis, value)
+	local joysticks,found = love.joystick.getJoysticks(),false
+	for i,v in ipairs(joysticks) do
+		if v:getID() == joystick:getID() then
+			joystick,found = i,true
+			break
+		end
+	end
+
+	if found then
+		local stickmoved = false
+		local shouldermoved = false
+
+		--If this axis is a stick, get whether it just moved out of its deadzone
+		if math.abs(value) > joystickaimdeadzone and axisDeadZones[joystick][axis]["stick"] then
+			stickmoved = true
+			axisDeadZones[joystick][axis]["stick"] = false
+		elseif math.abs(value) < joystickaimdeadzone and not axisDeadZones[joystick][axis]["stick"] then
+			axisDeadZones[joystick][axis]["stick"] = true
+		end
+		--If this axis is a shoulder, get whether it just moved out of its deadzone
+		if value > 0 and axisDeadZones[joystick][axis]["shoulder"] then
+			shouldermoved = true
+			axisDeadZones[joystick][axis]["shoulder"] = false
+		elseif value < 0 and not axisDeadZones[joystick][axis]["shoulder"] then
+			axisDeadZones[joystick][axis]["shoulder"] = true
+		end
+		if gamestate == "menu" or gamestate == "options" then
+			menu_joystickaxis(joystick, axis, value, stickmoved, shouldermoved)
+		elseif gamestate == "game" then
+			game_joystickaxis(joystick, axis, value, stickmoved, shouldermoved)
+		end
+	end
+end
+function love.joystickhat(joystick, hat, direction)
+	local joysticks,found = love.joystick.getJoysticks(),false
+	for i,v in ipairs(joysticks) do
+		if v:getID() == joystick:getID() then
+			joystick,found = i,true
+			break
+		end
+	end
+
+	if found then
+		if gamestate == "menu" or gamestate == "options" then
+			menu_joystickhat(joystick, hat, direction)
+		elseif gamestate == "game" then
+			game_joystickhat(joystick, hat, direction)
+		end
+	end
+end
+-- love.gamepadpressed = love.joystickpressed
+-- love.gamepadreleased = love.joystickreleased
+-- love.gamepadaxis = love.joystickaxis
 
 function round(num, idp) --Not by me
 	local mult = 10^(idp or 0)
