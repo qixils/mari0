@@ -1857,6 +1857,23 @@ function game_draw()
 		love.graphics.setColor(1, 1, 1)
 	end
 
+	local width = love.graphics.getLineWidth()
+	love.graphics.setLineWidth(scale)
+
+	for j, w in pairs(userects) do
+		love.graphics.setColor(0, 255, 255, 150)
+		love.graphics.rectangle("line", math.floor((w.x-xscroll)*16*scale)+.5, math.floor((w.y-.5)*16*scale)+.5, w.width*16*scale-1, w.height*16*scale-1)
+	end
+
+	local k = objects["player"][1]
+	local xcenter = k.x + 6/16 - math.sin(k.pointingangle)*userange
+	local ycenter = k.y + 6/16 - math.cos(k.pointingangle)*userange
+								
+	love.graphics.setColor(0, 255, 255)
+	love.graphics.rectangle("line", math.floor((xcenter-usesquaresize/2-xscroll)*16*scale)+.5, math.floor((ycenter-usesquaresize/2-.5)*16*scale)+.5, usesquaresize*16*scale-1, usesquaresize*16*scale-1)
+
+	love.graphics.setLineWidth(width)
+
 	if editormode then
 		editor_draw()
 	end
